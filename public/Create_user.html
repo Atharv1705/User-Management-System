@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create User</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FF6F61, #6FA3EF, #88D8B0, #FFB7B2);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
+            text-align: center;
+        }
+
+        .container:hover {
+            transform: scale(1.02);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #6FA3EF; /* Blue focus color */
+            outline: none;
+            box-shadow: 0 0 5px rgba(111, 163, 239, 0.5);
+        }
+
+        button {
+            padding: 12px 16px;
+            background-color: #28a745;
+            color: white;
+            border: none; /* Remove border */
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto 0;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #2ecc71;
+        }
+
+        button:active {
+            transform: scale(0.98); /* Slightly reduce size on click */
+        }
+
+        .go-back {
+            background-color: #6c757d; /* Gray color for Go Back button */
+            margin-bottom: 20px; /* Space below */
+        }
+
+        .go-back:hover {
+            background-color: #5a6268; /* Darker gray on hover */
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Create User</h1>
+        <form id="add_user">
+            <div class="form-group">
+                <input type="text" name="name" placeholder="Name" required>
+            </div>
+            <div class="form-group">
+                <input type="number" name="age" placeholder="Age" required min="1">
+            </div>
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+                <input type="text" name="phno" placeholder="Phone Number" required>
+            </div>
+
+            <!-- Gender dropdown -->
+            <div class="form-group">
+                <select name="gender" required>
+                    <option value="" disabled selected>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            
+            <button type="submit">Create User</button>
+        </form>
+        <button class="go-back" onclick="window.location.href='index.html'">Go Back</button> <!-- Go Back button -->
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $("#add_user").submit(function (e) {
+                e.preventDefault();
+                const data = $(this).serialize();
+                $.post("http://localhost:3000/sign_up", data, function () {
+                    toastr.success("User created successfully!");
+                    $("#add_user")[0].reset(); // Reset the form after successful submission
+                }).fail(function () {
+                    toastr.error("Error creating user.");
+                });
+            });
+        });
+    </script>
+
+</body>
+
+</html>
