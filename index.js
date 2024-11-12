@@ -2,6 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const validator = require('validator'); // For email validation
 
 const app = express();
 
@@ -29,10 +32,41 @@ const userSchema = new mongoose.Schema({
 
 const UserModel = mongoose.model('User', userSchema);
 
+// Rate limiter setup for login and sign-up routes
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per window
+    message: "Too many requests, please try again later"
+});
+
 // CREATE - Register a new user
-app.post("/sign_up", async (req, res) => {
+app.post("/sign_up", limiter, async (req, res) => {
+    const { name, age, email, phno, gender, password } = req.body;
+
+    // Validate required fields
+    if (!name || !age || !email || !phno || !gender || !password) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Validate email format
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Validate phone number format (assuming 10 digit phone number)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phno)) {
+        return res.status(400).json({ error: "Invalid phone number format" });
+    }
+
     try {
-        const { name, age, email, phno, gender, password } = req.body;
+        // Check if email already exists
+        const existingUser = await UserModel.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: "Email already exists" });
+        }
+
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = new UserModel({
@@ -49,31 +83,35 @@ app.post("/sign_up", async (req, res) => {
         return res.status(201).json({ message: "User created successfully" });
     } catch (err) {
         console.error("Error creating user:", err);
-        return res.status(500).json({ error: "Error creating user" });
+        return res.status(500).json({ error: "Error creating user", details: err.message });
     }
 });
 
 // LOGIN - Authenticate user
-app.post("/login", async (req, res) => {
+app.post("/login", limiter, async (req, res) => {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+    }
+
     try {
-        // Find user by email
         const user = await UserModel.findOne({ email });
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Compare passwords
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
             return res.status(401).json({ error: "Invalid password" });
         }
 
-        // Passwords match, login successful
-        return res.status(200).json({ message: "Login successful" });
+        // Generate JWT token
+        const token = jwt.sign({ userId: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+
+        return res.status(200).json({ message: "Login successful", token });
     } catch (err) {
         console.error("Error logging in:", err);
         return res.status(500).json({ error: "Error logging in" });
@@ -96,11 +134,11 @@ app.get("/users/:id", async (req, res) => {
     try {
         const userId = req.params.id;
         const user = await UserModel.findById(userId);
-        
+
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        
+
         res.json(user);
     } catch (err) {
         console.error("Error fetching user:", err);
@@ -114,16 +152,8 @@ app.put("/users/:id", async (req, res) => {
         const userId = req.params.id;
         const { name, age, email, phno, gender, password } = req.body;
 
-        // Create an object to hold the updated data
-        const updatedData = {
-            name,
-            age,
-            email,
-            phno,
-            gender
-        };
+        const updatedData = { name, age, email, phno, gender };
 
-        // Only hash and include the password if it is provided
         if (password) {
             updatedData.password = await bcrypt.hash(password, 10);
         }
@@ -166,5 +196,5 @@ app.get("/", (req, res) => {
 // Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);  // Corrected string interpolation
+    console.log(`Listening on port ${PORT}`);
 });
