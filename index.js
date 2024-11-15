@@ -190,7 +190,7 @@ app.delete("/users/:id", async (req, res) => {
 
 // Home route
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/index.html');
 });
 
 // Start the server
